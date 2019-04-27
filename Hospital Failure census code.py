@@ -3,7 +3,17 @@ import pandas as pd
 import censusdata
 
 
-
+def create_census_datapull(table_name,items):
+    output_list=[]
+    for item in items:
+        item_exam=str(item)
+        if len(item_exam)=1:
+            output_list.append(str(table_name)+'_00'+item_exam+'E')
+        elif len(item_exam)=2:
+        output_list.append(str(table_name)+'_0'+item_exam+'E')
+        else:
+            output_list.append(str(table_name)+'_'+item_exam+'E')
+    return output_list
 
 
 
