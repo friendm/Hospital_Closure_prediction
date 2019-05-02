@@ -3,71 +3,65 @@ import pandas as pd
 import censusdata
 
 
-def create_census_datapull(table_name,items):
+
+#builds out the item name from a value 
+def create_census_value(table_name,item):
+        if len(item)==1:
+            return str(table_name)+'_00'+item+'E'
+        elif len(item)==2:
+            return str(table_name)+'_0'+item+'E'
+        else:
+            return str(table_name)+'_'+item+'E'
+
+#inputs table_name, items inside of table,year for acs
+def create_census_datapull(table_name,items,year):
     output_list=[]
     for item in items:
         item_exam=str(item)
-        if len(item_exam)=1:
-            output_list.append(str(table_name)+'_00'+item_exam+'E')
-        elif len(item_exam)=2:
-        output_list.append(str(table_name)+'_0'+item_exam+'E')
-        else:
-            output_list.append(str(table_name)+'_'+item_exam+'E')
-    return output_list
+        output_list.append(create_census_value(table_name,item_exam))
+    
+    new_data=censusdata.download('acs1', year, censusdata.censusgeo([ ('county','*')]),output_list)    
+    return new_data
 
 
 
+year_list=[2015,2016,2017]
+
+#65 plus for medicare
+for year in year_list:
 
 
+    county65plus = censusdata.download('acs1', year, censusdata.censusgeo([ ('county','*')])
+                                       ,['B01001_001E', 'B01001_020E', 'B01001_021E', 'B01001_022E', 'B01001_023E',
+                                        'B01001_024E', 'B01001_025E', 'B01001_044E', 'B01001_045E', 'B01001_046E',
+                                        'B01001_047E', 'B01001_048E', 'B01001_049E'])
+
+    county65plus['pop_65plus'] = (county65plus.B01001_020E + county65plus.B01001_021E + county65plus.B01001_022E
+                                      + county65plus.B01001_023E + county65plus.B01001_024E + county65plus.B01001_025E
+                                      + county65plus.B01001_044E + county65plus.B01001_045E + county65plus.B01001_046E
+                                      + county65plus.B01001_047E + county65plus.B01001_048E
+                                      + county65plus.B01001_049E) 
+    county65plus1 = county65plus[['B01001_001E', 'pop_65plus']]
+    county65plus1 = county65plus1.rename(columns={'B01001_001E': 'population_size'})
+    county65plus1['year']=year
+    county65plus1.to_csv('Desktop\_age'+str(year)+'_output.csv')
 
 
+ #Medicaid
+for year in year_list:
+    medicaid_data=create_census_datapull('B27007',[4,7,10,13,16,19,22,25,28,32,35,38,41,44,47,50,53,56],year)
+    medicaid_data['medicaid_total'] = medicaid_data.sum(axis=1)
+    medicaid_data['medicaid_total'].to_csv('Desktop\_medicaid'+str(year)+'_output.csv')       
 
-
-#change from county to FIPS
-
-county65plus = censusdata.download('acs5', 2015, censusdata.censusgeo([('county', '*')]),
-                                   ['DP05_0001E', 'DP05_0014PE', 'DP05_0015PE', 'DP05_0016PE',],
-                                   tabletype='profile')
-county65plus['percent_65plus'] = (county65plus['DP05_0014PE'] + county65plus['DP05_0015PE']
-                                  + county65plus['DP05_0016PE'])
-county65plus = county65plus[['DP05_0001E', 'percent_65plus']]
-county65plus = county65plus.rename(columns={'DP05_0001E': 'population_size'})
-county65plus.describe()
-
-#poverty levels
-""B06012""-->1:below 100,2:100-149,3:150,
-#with medicaid coverage 1 gives us total
-B27007-->4,7,10,13,16,19,22,25,28,32,35,38,41,44,47,50,53,56
-#employment: 1 is 
-B23001--> 7
-14
-21
-28
-35
-42
-49
-56
-63
-70
-75
-80
-85
-93
-100
-107
-114
-121
-128
-135
-142
-149
-156
-161
-166
-171
-#college students in the area 
-B14004-->3
-8
-19
-24
+#employment
+for year in year_list:
+    employment_data=create_census_datapull('B23001',[7,14,21,28,35,42,49,56,63,70,75,80,85,93,100,107,114,121,128,135,142,149,156,161,166,171],year)
+    employment_data['employment_total'] = medicaid_data.sum(axis=1)
+    employment_data['employment_total'].to_csv('Desktop\_employment'+str(year)+'_output.csv')
+    
+#college
+for year in year_list:
+    college_data=create_census_datapull('B14004',[3,8,19,24],year)
+    college_data['college_total'] = medicaid_data.sum(axis=1)
+    college_data['college_total'].to_csv('Desktop\_college'+str(year)+'_output.csv')
 
